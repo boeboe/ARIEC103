@@ -13,11 +13,12 @@ public static class Iec103AsduBuilder
 
     public static byte[] ClockSynchronization(byte commonAddress, DateTime localTime)
     {
-        var time = EncodeCp32Time2a(localTime);
+        // Type 6, VSQ 1, COT 8, CA, FUN=255, INF=0, CP56Time2a (seven octets).
+        var time = EncodeCp56Time2a(localTime);
         return new[]
         {
             (byte)0x06, (byte)0x81, (byte)0x08, commonAddress, (byte)0xFF, (byte)0x00,
-            time[0], time[1], time[2], time[3], time[4]
+            time[0], time[1], time[2], time[3], time[4], time[5], time[6]
         };
     }
 
@@ -46,6 +47,25 @@ public static class Iec103AsduBuilder
             (byte)(t.Minute & 0x3F),
             (byte)(t.Hour & 0x1F),
             (byte)0x00
+        };
+    }
+
+    public static byte[] EncodeCp56Time2a(DateTime localTime)
+    {
+        var t = localTime.Kind == DateTimeKind.Utc ? localTime.ToLocalTime() : localTime;
+        var milliseconds = checked((ushort)((t.Second * 1000) + t.Millisecond));
+        // Day of week 1 = Monday .. 7 = Sunday.
+        var dayOfWeek = t.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)t.DayOfWeek;
+
+        return new[]
+        {
+            (byte)(milliseconds & 0xFF),
+            (byte)((milliseconds >> 8) & 0xFF),
+            (byte)(t.Minute & 0x3F),
+            (byte)(t.Hour & 0x1F),
+            (byte)((t.Day & 0x1F) | (dayOfWeek << 5)),
+            (byte)(t.Month & 0x0F),
+            (byte)(t.Year % 100)
         };
     }
 }
