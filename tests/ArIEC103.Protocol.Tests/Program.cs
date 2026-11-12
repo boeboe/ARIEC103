@@ -27,6 +27,7 @@ internal static class Program
             ("Sanitized Type 9 measurand test vector decodes", TestVectorType9Measurand),
             ("Sanitized private ASDU test vector stays transparent", TestVectorPrivateAsdu),
             ("Type 6 clock synchronization carries CP56Time2a", TestClockSynchronizationCp56Time2a),
+            ("Type 20 general command carries DCO and RII", TestGeneralCommandCarriesRii),
             ("Master FCB is held after timeout and advances only after valid response", TestFcbHeldAfterTimeout),
             ("Master FCB is held after invalid checksum response", TestFcbHeldAfterInvalidChecksum)
         };
@@ -175,6 +176,20 @@ internal static class Program
         AssertEqual(7, decoded.DataBytes.Count, "CP56Time2a length");
         AssertNotNull(decoded.Time, "Type 6 time must decode");
         AssertEqual("14:34:12.345", decoded.Time!.DisplayTime, "Type 6 time of day");
+        return Task.CompletedTask;
+    }
+
+    private static Task TestGeneralCommandCarriesRii()
+    {
+        var asdu = Iec103AsduBuilder.GeneralCommand(1, functionType: 160, informationNumber: 23, commandQualifier: 2, returnInformationIdentifier: 7);
+        var expected = new byte[] { 0x14, 0x81, 0x14, 0x01, 0xA0, 0x17, 0x02, 0x07 };
+
+        AssertEqual(Convert.ToHexString(expected), Convert.ToHexString(asdu), "Type 20 ASDU");
+
+        var decoded = new AsduDecoder().Decode(asdu);
+        AssertEqual(20, decoded.TypeId, "Type 20 id");
+        AssertEqual(2, decoded.DataBytes.Count, "DCO and RII");
+        AssertTrue(decoded.Notes.Contains("Return information identifier (RII): 7"), "RII must be decoded");
         return Task.CompletedTask;
     }
 

@@ -23,11 +23,12 @@ public static class Iec103AsduBuilder
     }
 
 
-    public static byte[] GeneralCommand(byte commonAddress, byte functionType, byte informationNumber, byte commandQualifier = 1)
+    public static byte[] GeneralCommand(byte commonAddress, byte functionType, byte informationNumber, byte commandQualifier = 1, byte returnInformationIdentifier = 0)
     {
-        // Type 20 is used by ArIEC103 as a generic IEC-103 command envelope.
+        // Type 20, VSQ 1, COT 20, CA, FUN, INF, DCO, RII.
+        // The relay returns the RII as SIN of the ASDU 1 that confirms the command.
         // Project/relay-specific command semantics must be validated by the user mapping/profile.
-        return new[] { (byte)0x14, (byte)0x81, (byte)0x14, commonAddress, functionType, informationNumber, commandQualifier };
+        return new[] { (byte)0x14, (byte)0x81, (byte)0x14, commonAddress, functionType, informationNumber, commandQualifier, returnInformationIdentifier };
     }
 
     public static byte[] ProtectionResetCommand(byte commonAddress, byte functionType = 255, byte informationNumber = 19)
